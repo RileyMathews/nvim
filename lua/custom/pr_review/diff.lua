@@ -122,8 +122,14 @@ function M.open(file_path)
     return
   end
 
-  base_content = base_content or ""
-  head_content = head_content or ""
+  -- For new files (added in PR): base doesn't exist, show empty left side
+  -- For deleted files: head doesn't exist, show empty right side
+  if base_err then
+    base_content = ""
+  end
+  if head_err then
+    head_content = ""
+  end
 
   -- Determine filetype
   local ft = vim.filetype.match({ filename = file_path })
@@ -165,12 +171,16 @@ function M.open(file_path)
   -- Set window options
   for _, win in ipairs({ left_win, right_win }) do
     vim.wo[win].wrap = false
-    vim.wo[win].foldenable = false
-    vim.wo[win].foldcolumn = "0"
     vim.wo[win].signcolumn = "yes"
     vim.wo[win].number = true
     vim.wo[win].relativenumber = false
     vim.wo[win].cursorline = true
+    -- Enable diff folding to collapse unchanged regions
+    vim.wo[win].foldenable = true
+    vim.wo[win].foldmethod = "diff"
+    vim.wo[win].foldlevel = 0 -- Start with folds closed
+    vim.wo[win].foldminlines = 5 -- Only fold regions >= 5 lines
+    vim.wo[win].foldcolumn = "auto:3" -- Show fold indicators
   end
 
   -- Update state

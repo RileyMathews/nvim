@@ -245,6 +245,14 @@ function M.fetch_comments(pr)
 
   local threads, reviews, pending_review, err = get_comments_api().fetch_review_data(owner, name, pr.number)
   if err then
+    -- Check for rate limiting
+    if err:match("429") or err:match("throttled") or err:match("rate limit") then
+      Snacks.notify.warn(
+        "GitHub API rate limit hit. Comments may be incomplete.\nWait a moment and use <leader>rR to refresh.",
+        { title = "PR Review" }
+      )
+      return {}, {}, nil
+    end
     Snacks.notify.error("Failed to fetch comments: " .. err, { title = "PR Review" })
     return {}, {}, nil
   end
@@ -257,10 +265,19 @@ end
 ---@param ref string
 ---@return string?, string?
 function M.get_file_at_ref(file_path, ref)
-  local output, err = gh.exec(string.format("git show %s:%s 2>/dev/null", ref, file_path))
-  if err then
-    return nil, err
+  -- Use vim.fn.system with proper error checking via v:shell_error
+  -- First check if the file exists at this ref
+  vim.fn.system(string.format("git cat-file -e '%s:%s'", ref, file_path))
+  if vim.v.shell_error ~= 0 then
+    return nil, "File does not exist at " .. ref
   end
+
+  -- File exists, get its content
+  local output = vim.fn.system(string.format("git show '%s:%s'", ref, file_path))
+  if vim.v.shell_error ~= 0 then
+    return nil, "Failed to get file content"
+  end
+
   return output, nil
 end
 
@@ -422,6 +439,30 @@ function M.submit_review(pr, review_id, event, body)
     return false, err
   end
 
+  return true, nil
+end
+
+-- Check if git working directory is clean
+---@return boolean is_clean
+---@return string? error
+function M.is_git_clean()
+  local output, err = gh.exec("git status --porcelain")
+  if err then
+    return false, "Failed to check git status"
+  end
+  -- Empty output means clean
+  return output == nil or output == "" or output:match("^%s*$") ~= nil, nil
+end
+
+-- Fetch a remote ref
+---@param ref string
+---@return boolean success
+---@return string? error
+function M.fetch_ref(ref)
+  local _, err = gh.exec("git fetch origin " .. ref .. " 2>&1")
+  if err then
+    return false, "Failed to fetch " .. ref
+  end
   return true, nil
 end
 

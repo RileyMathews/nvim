@@ -113,6 +113,20 @@ local function load_pr_data(opts)
   opts = opts or {}
   local api_mod = get_api()
 
+  -- Check git state first
+  local is_clean, clean_err = api_mod.is_git_clean()
+  if clean_err then
+    Snacks.notify.error(clean_err, { title = "PR Review" })
+    return false
+  end
+  if not is_clean then
+    Snacks.notify.error(
+      "Git working directory is not clean.\nPlease commit or stash changes before reviewing a PR.",
+      { title = "PR Review" }
+    )
+    return false
+  end
+
   -- Get PR info
   local pr, err
   if opts.pr then
@@ -127,6 +141,18 @@ local function load_pr_data(opts)
   end
 
   state.pr = pr
+
+  -- Fetch remote refs to ensure we can access the files
+  Snacks.notify.info("Fetching PR refs...", { title = "PR Review" })
+  local _, base_fetch_err = api_mod.fetch_ref(pr.base_ref)
+  local _, head_fetch_err = api_mod.fetch_ref(pr.head_ref)
+
+  if base_fetch_err then
+    Snacks.notify.warn("Could not fetch base ref: " .. pr.base_ref, { title = "PR Review" })
+  end
+  if head_fetch_err then
+    Snacks.notify.warn("Could not fetch head ref: " .. pr.head_ref, { title = "PR Review" })
+  end
 
   -- Fetch diff
   Snacks.notify.info("Fetching PR diff...", { title = "PR Review" })
@@ -453,6 +479,29 @@ function M.setup_keymaps(bufnr)
   -- Mark files as reviewed
   vim.keymap.set("n", "<leader>rd", M.mark_reviewed, vim.tbl_extend("force", opts, { desc = "Mark file as reviewed (done)" }))
   vim.keymap.set("n", "<leader>rD", M.unmark_reviewed, vim.tbl_extend("force", opts, { desc = "Unmark file as reviewed" }))
+
+  -- Fold controls
+  vim.keymap.set("n", "<leader>rf", function()
+    -- Toggle all folds: if any are closed, open all; otherwise close all
+    local foldclosed = vim.fn.foldclosed(1)
+    if foldclosed == -1 then
+      -- Check if there are any folds in the buffer
+      local has_closed_fold = false
+      for lnum = 1, vim.api.nvim_buf_line_count(0) do
+        if vim.fn.foldclosed(lnum) ~= -1 then
+          has_closed_fold = true
+          break
+        end
+      end
+      if has_closed_fold then
+        vim.cmd("normal! zR") -- Open all folds
+      else
+        vim.cmd("normal! zM") -- Close all folds
+      end
+    else
+      vim.cmd("normal! zR") -- Open all folds
+    end
+  end, vim.tbl_extend("force", opts, { desc = "Toggle all folds" }))
 end
 
 return M
