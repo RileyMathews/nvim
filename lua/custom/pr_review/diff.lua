@@ -109,12 +109,21 @@ function M.open(file_path)
   -- Close existing diff view if open
   M.close()
 
-  -- Get file contents at base and head
-  local base_ref = pr.base_ref
-  local head_ref = pr.head_ref
+  -- Get file contents at base and head commits (using exact SHAs to match GitHub's diff)
+  local base_sha = pr.base_sha
+  local head_sha = pr.head_sha
 
-  local base_content, base_err = get_api().get_file_at_ref(file_path, "origin/" .. base_ref)
-  local head_content, head_err = get_api().get_file_at_ref(file_path, "origin/" .. head_ref)
+  if not base_sha then
+    Snacks.notify.error("PR data missing base_sha - please reload the PR", { title = "PR Review" })
+    return
+  end
+  if not head_sha then
+    Snacks.notify.error("PR data missing head_sha - please reload the PR", { title = "PR Review" })
+    return
+  end
+
+  local base_content, base_err = get_api().get_file_at_ref(file_path, base_sha)
+  local head_content, head_err = get_api().get_file_at_ref(file_path, head_sha)
 
   -- Handle new/deleted files
   if base_err and head_err then
@@ -201,9 +210,9 @@ function M.open(file_path)
   -- Focus on right window (head/new version)
   vim.api.nvim_set_current_win(right_win)
 
-  -- Set window titles using winbar
-  local base_title = string.format(" BASE: %s (%s)", file_path, base_ref)
-  local head_title = string.format(" HEAD: %s (%s)", file_path, head_ref)
+  -- Set window titles using winbar (show branch name @ short SHA)
+  local base_title = string.format(" BASE: %s (%s @ %s)", file_path, pr.base_ref, base_sha:sub(1, 7))
+  local head_title = string.format(" HEAD: %s (%s @ %s)", file_path, pr.head_ref, head_sha:sub(1, 7))
 
   vim.wo[left_win].winbar = "%#DiffDelete#" .. base_title .. "%*"
   vim.wo[right_win].winbar = "%#DiffAdd#" .. head_title .. "%*"
