@@ -14,6 +14,11 @@ local pr_comments = require("custom.pr_comments").setup({
     use_fake_data = false, -- Use real GitHub API
 })
 
+local pr_review = require("custom.pr_review")
+
+
+vim.keymap.set("n", "<leader>ro", pr_review.open, { desc = "Open Prs" })
+
 vim.keymap.set("n", "<leader>prt", pr_comments.toggle, { desc = "Toggle" })
 vim.keymap.set("n", "<leader>prr", pr_comments.toggle_resolved, { desc = "Toggle resolved" })
 vim.keymap.set("n", "<leader>pro", pr_comments.toggle_outdated, { desc = "Toggle outdated" })

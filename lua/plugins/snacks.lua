@@ -241,13 +241,5 @@ return {
 			end,
 			desc = "[G]it [H]ub",
 		},
-		-- PR Review
-		{
-			"<leader>pr",
-			function()
-				require("custom.pr_review").open()
-			end,
-			desc = "[P]R [R]eview",
-		},
 	},
 }
