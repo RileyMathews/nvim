@@ -35,6 +35,7 @@ local cache = {
 ---@field base_sha string
 ---@field url string
 ---@field repo string
+---@field body string?
 ---@field pending_review_id string?
 
 ---@class PRReview.Comment
@@ -112,7 +113,7 @@ function M.get_current_pr()
     "pr",
     "view",
     "--json",
-    "number,title,state,author,headRefName,baseRefName,headRefOid,baseRefOid,url",
+    "number,title,body,state,author,headRefName,baseRefName,headRefOid,baseRefOid,url",
   })
 
   if err then
@@ -125,6 +126,7 @@ function M.get_current_pr()
   local pr = {
     number = result.number,
     title = result.title,
+    body = result.body,
     state = result.state:lower(),
     author = result.author.login,
     head_ref = result.headRefName,
@@ -149,7 +151,7 @@ function M.get_pr(pr_number, repo)
     "view",
     tostring(pr_number),
     "--json",
-    "number,title,state,author,headRefName,baseRefName,headRefOid,baseRefOid,url",
+    "number,title,body,state,author,headRefName,baseRefName,headRefOid,baseRefOid,url",
   }, { repo = repo })
 
   if err then
@@ -160,6 +162,7 @@ function M.get_pr(pr_number, repo)
   local pr = {
     number = result.number,
     title = result.title,
+    body = result.body,
     state = result.state:lower(),
     author = result.author.login,
     head_ref = result.headRefName,

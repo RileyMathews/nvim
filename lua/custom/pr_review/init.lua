@@ -16,6 +16,8 @@ local M = {}
 ---@field original_win number?
 ---@field original_buf number?
 ---@field reviewed_files table<string, boolean>
+---@field description_buf number?
+---@field description_win number?
 
 ---@type PRReview.State
 local state = {
@@ -31,6 +33,8 @@ local state = {
   original_win = nil,
   original_buf = nil,
   reviewed_files = {},
+  description_buf = nil,
+  description_win = nil,
 }
 
 -- Lazy load submodules
@@ -103,6 +107,8 @@ function M.reset_state()
     original_win = nil,
     original_buf = nil,
     reviewed_files = {},
+    description_buf = nil,
+    description_win = nil,
   }
 end
 
@@ -216,8 +222,8 @@ local function open_loaded_pr(opts)
     { title = "PR Review" }
   )
 
-  -- Open the file picker
-  get_picker().open()
+  -- Open PR description first
+  M.open_description()
 end
 
 -- Open PR review by selecting from open PRs in repo
@@ -362,9 +368,66 @@ function M.show_picker()
   get_picker().open()
 end
 
+-- Open PR description buffer
+function M.open_description()
+  local pr = state.pr
+  if not pr then
+    Snacks.notify.warn("No PR loaded", { title = "PR Review" })
+    return
+  end
+
+  -- Close any existing description buffer
+  if state.description_buf and vim.api.nvim_buf_is_valid(state.description_buf) then
+    vim.api.nvim_buf_delete(state.description_buf, { force = true })
+  end
+
+  local content = pr.body
+  if not content or content == "" then
+    content = "_No PR description provided._"
+  end
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  local lines = vim.split(content, "\n", { plain = true })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+  vim.api.nvim_buf_set_name(buf, string.format("pr://%d/description", pr.number))
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].bufhidden = "wipe"
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].filetype = "markdown"
+
+  vim.cmd("tabnew")
+  local win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(win, buf)
+  vim.wo[win].wrap = true
+  vim.wo[win].cursorline = false
+  vim.wo[win].winbar = string.format(" PR #%d: %s ", pr.number, pr.title)
+
+  state.description_buf = buf
+  state.description_win = win
+
+  local opts = { buffer = buf, silent = true }
+  vim.keymap.set("n", "<leader>rp", M.show_picker, vim.tbl_extend("force", opts, { desc = "File picker" }))
+  vim.keymap.set("n", "q", M.close, vim.tbl_extend("force", opts, { desc = "Close review" }))
+  vim.keymap.set("n", "<leader>rq", M.close, vim.tbl_extend("force", opts, { desc = "Close review" }))
+end
+
 -- Close the review session
 function M.close()
   get_diff().close()
+
+  if state.description_buf and vim.api.nvim_buf_is_valid(state.description_buf) then
+    vim.api.nvim_buf_delete(state.description_buf, { force = true })
+  end
+
+  if state.original_win and vim.api.nvim_win_is_valid(state.original_win) then
+    if state.original_buf and vim.api.nvim_buf_is_valid(state.original_buf) then
+      vim.api.nvim_win_set_buf(state.original_win, state.original_buf)
+    end
+    vim.api.nvim_set_current_win(state.original_win)
+  end
+
   M.reset_state()
   get_api().clear_cache()
 end
