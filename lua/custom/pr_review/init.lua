@@ -43,6 +43,7 @@ local picker = nil
 local diff = nil
 local comments = nil
 local actions = nil
+local loading = nil
 
 local function get_api()
   if not api then
@@ -77,6 +78,13 @@ local function get_actions()
     actions = require("custom.pr_review.actions")
   end
   return actions
+end
+
+local function get_loading()
+  if not loading then
+    loading = require("custom.pr_review.loading")
+  end
+  return loading
 end
 
 -- Get current state (for submodules)
@@ -114,71 +122,94 @@ end
 
 -- Load PR data
 ---@param opts? {pr?: number, repo?: string}
----@return boolean success
-local function load_pr_data(opts)
+---@param cb fun(success:boolean)
+local function load_pr_data_async(opts, cb)
   opts = opts or {}
   local api_mod = get_api()
+  local loader = get_loading().start({ stage = "Checking git status..." })
+  local done = false
+
+  local function finish(success)
+    if done then
+      return
+    end
+    done = true
+    cb(success)
+  end
+
+  local function fail(message)
+    loader.stop(false)
+    if message then
+      Snacks.notify.error(message, { title = "PR Review" })
+    end
+    finish(false)
+  end
 
   -- Check git state first
-  local is_clean, clean_err = api_mod.is_git_clean()
-  if clean_err then
-    Snacks.notify.error(clean_err, { title = "PR Review" })
-    return false
-  end
-  if not is_clean then
-    Snacks.notify.error(
-      "Git working directory is not clean.\nPlease commit or stash changes before reviewing a PR.",
-      { title = "PR Review" }
-    )
-    return false
-  end
+  api_mod.is_git_clean_async(function(is_clean, clean_err)
+    if clean_err then
+      fail(clean_err)
+      return
+    end
+    if not is_clean then
+      fail("Git working directory is not clean.\nPlease commit or stash changes before reviewing a PR.")
+      return
+    end
 
-  -- Get PR info
-  local pr, err
-  if opts.pr then
-    pr, err = api_mod.get_pr(opts.pr, opts.repo)
-  else
-    pr, err = api_mod.get_current_pr()
-  end
+    loader.update("Detecting PR...")
 
-  if not pr then
-    Snacks.notify.error(err or "Failed to detect PR", { title = "PR Review" })
-    return false
-  end
+    local function on_pr(pr, err)
+      if not pr then
+        fail(err or "Failed to detect PR")
+        return
+      end
 
-  state.pr = pr
+      state.pr = pr
 
-  -- Fetch remote refs to ensure we can access the files
-  Snacks.notify.info("Fetching PR refs...", { title = "PR Review" })
-  local _, base_fetch_err = api_mod.fetch_ref(pr.base_ref)
-  local _, head_fetch_err = api_mod.fetch_ref(pr.head_ref)
+      loader.update("Fetching PR refs...")
+      local remaining = 2
+      local function on_ref(ok, ref_name)
+        if not ok then
+          Snacks.notify.warn("Could not fetch " .. ref_name, { title = "PR Review" })
+        end
+        remaining = remaining - 1
+        if remaining == 0 then
+          loader.update("Fetching PR diff...")
+          api_mod.fetch_diff_async(pr.number, pr.repo, function(diff_text, diff_err)
+            if not diff_text then
+              fail(diff_err or "Failed to fetch diff")
+              return
+            end
 
-  if base_fetch_err then
-    Snacks.notify.warn("Could not fetch base ref: " .. pr.base_ref, { title = "PR Review" })
-  end
-  if head_fetch_err then
-    Snacks.notify.warn("Could not fetch head ref: " .. pr.head_ref, { title = "PR Review" })
-  end
+            state.diff_text = diff_text
+            state.files = api_mod.parse_diff_files(diff_text)
 
-  -- Fetch diff
-  Snacks.notify.info("Fetching PR diff...", { title = "PR Review" })
-  local diff_text, diff_err = api_mod.fetch_diff(pr.number, pr.repo)
-  if not diff_text then
-    Snacks.notify.error(diff_err or "Failed to fetch diff", { title = "PR Review" })
-    return false
-  end
+            loader.update("Fetching comments...")
+            api_mod.fetch_comments_async(pr, function(threads, reviews, pending)
+              state.threads = threads or {}
+              state.reviews = reviews or {}
+              state.pending_review = pending
+              loader.stop(true, "PR data loaded")
+              finish(true)
+            end)
+          end)
+        end
+      end
 
-  state.diff_text = diff_text
-  state.files = api_mod.parse_diff_files(diff_text)
+      api_mod.fetch_ref_async(pr.base_ref, function(ok)
+        on_ref(ok, "base ref: " .. pr.base_ref)
+      end)
+      api_mod.fetch_ref_async(pr.head_ref, function(ok)
+        on_ref(ok, "head ref: " .. pr.head_ref)
+      end)
+    end
 
-  -- Fetch comments
-  Snacks.notify.info("Fetching comments...", { title = "PR Review" })
-  local threads, reviews, pending = api_mod.fetch_comments(pr)
-  state.threads = threads
-  state.reviews = reviews
-  state.pending_review = pending
-
-  return true
+    if opts.pr then
+      api_mod.get_pr_async(opts.pr, opts.repo, on_pr)
+    else
+      api_mod.get_current_pr_async(on_pr)
+    end
+  end)
 end
 
 -- Open PR review
@@ -191,39 +222,41 @@ local function open_loaded_pr(opts)
   state.original_buf = vim.api.nvim_get_current_buf()
 
   -- Load PR data
-  if not load_pr_data(opts) then
-    return
-  end
-
-  local pr = state.pr
-  if not pr then
-    return
-  end
-
-  -- Show success message
-  local file_count = #state.files
-  local thread_count = #state.threads
-  local unresolved = 0
-  for _, t in ipairs(state.threads) do
-    if not t.resolved then
-      unresolved = unresolved + 1
+  load_pr_data_async(opts, function(success)
+    if not success then
+      return
     end
-  end
 
-  Snacks.notify.info(
-    string.format(
-      "PR #%d: %s\n%d files changed, %d comment threads (%d unresolved)",
-      pr.number,
-      pr.title,
-      file_count,
-      thread_count,
-      unresolved
-    ),
-    { title = "PR Review" }
-  )
+    local pr = state.pr
+    if not pr then
+      return
+    end
 
-  -- Open PR description first
-  M.open_description()
+    -- Show success message
+    local file_count = #state.files
+    local thread_count = #state.threads
+    local unresolved = 0
+    for _, t in ipairs(state.threads) do
+      if not t.resolved then
+        unresolved = unresolved + 1
+      end
+    end
+
+    Snacks.notify.info(
+      string.format(
+        "PR #%d: %s\n%d files changed, %d comment threads (%d unresolved)",
+        pr.number,
+        pr.title,
+        file_count,
+        thread_count,
+        unresolved
+      ),
+      { title = "PR Review" }
+    )
+
+    -- Open PR description first
+    M.open_description()
+  end)
 end
 
 -- Open PR review by selecting from open PRs in repo

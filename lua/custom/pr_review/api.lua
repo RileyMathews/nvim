@@ -106,6 +106,31 @@ function M.get_repo_info()
   return cache.repo_info, nil
 end
 
+---@param cb fun(info:PRReview.RepoInfo?, err:string?)
+function M.get_repo_info_async(cb)
+  if cache.repo_info then
+    vim.schedule(function()
+      cb(cache.repo_info, nil)
+    end)
+    return
+  end
+
+  gh.get_repo_info_async(function(result, err)
+    if err then
+      cb(nil, err)
+      return
+    end
+
+    cache.repo_info = {
+      owner = result.owner,
+      name = result.name,
+      full_name = result.full_name,
+    }
+
+    cb(cache.repo_info, nil)
+  end)
+end
+
 -- Detect the current PR from the branch
 ---@return PRReview.PR?, string?
 function M.get_current_pr()
@@ -139,6 +164,46 @@ function M.get_current_pr()
 
   cache.current_pr = pr
   return pr, nil
+end
+
+---@param cb fun(pr:PRReview.PR?, err:string?)
+function M.get_current_pr_async(cb)
+  gh.json_async({
+    "pr",
+    "view",
+    "--json",
+    "number,title,body,state,author,headRefName,baseRefName,headRefOid,baseRefOid,url",
+  }, nil, function(result, err)
+    if err then
+      cb(nil, "No PR found for current branch")
+      return
+    end
+
+    M.get_repo_info_async(function(repo_info, repo_err)
+      if repo_err then
+        cb(nil, repo_err)
+        return
+      end
+
+      ---@type PRReview.PR
+      local pr = {
+        number = result.number,
+        title = result.title,
+        body = result.body,
+        state = result.state:lower(),
+        author = result.author.login,
+        head_ref = result.headRefName,
+        base_ref = result.baseRefName,
+        head_sha = result.headRefOid,
+        base_sha = result.baseRefOid,
+        url = result.url,
+        repo = repo_info and repo_info.full_name or "",
+      }
+
+      cache.current_pr = pr
+      cb(pr, nil)
+    end)
+  end)
 end
 
 -- Get PR by number
@@ -176,6 +241,52 @@ function M.get_pr(pr_number, repo)
   return pr, nil
 end
 
+---@param pr_number number
+---@param repo? string
+---@param cb fun(pr:PRReview.PR?, err:string?)
+function M.get_pr_async(pr_number, repo, cb)
+  gh.json_async({
+    "pr",
+    "view",
+    tostring(pr_number),
+    "--json",
+    "number,title,body,state,author,headRefName,baseRefName,headRefOid,baseRefOid,url",
+  }, { repo = repo }, function(result, err)
+    if err then
+      cb(nil, "Failed to fetch PR #" .. pr_number)
+      return
+    end
+
+    local function finish(repo_name)
+      ---@type PRReview.PR
+      local pr = {
+        number = result.number,
+        title = result.title,
+        body = result.body,
+        state = result.state:lower(),
+        author = result.author.login,
+        head_ref = result.headRefName,
+        base_ref = result.baseRefName,
+        head_sha = result.headRefOid,
+        base_sha = result.baseRefOid,
+        url = result.url,
+        repo = repo_name or "",
+      }
+
+      cb(pr, nil)
+    end
+
+    if repo then
+      finish(repo)
+      return
+    end
+
+    M.get_repo_info_async(function(repo_info)
+      finish(repo_info and repo_info.full_name or "")
+    end)
+  end)
+end
+
 -- Fetch PR diff as text
 ---@param pr_number number
 ---@param repo? string
@@ -183,6 +294,14 @@ end
 function M.fetch_diff(pr_number, repo)
   local args = { "pr", "diff", tostring(pr_number) }
   return gh.text(args, { repo = repo })
+end
+
+---@param pr_number number
+---@param repo? string
+---@param cb fun(diff_text:string?, err:string?)
+function M.fetch_diff_async(pr_number, repo, cb)
+  local args = { "pr", "diff", tostring(pr_number) }
+  gh.text_async(args, { repo = repo }, cb)
 end
 
 -- Parse diff to extract file list
@@ -264,6 +383,35 @@ function M.fetch_comments(pr)
   end
 
   return threads, reviews, pending_review
+end
+
+---@param pr PRReview.PR
+---@param cb fun(threads:PRReview.ReviewThread[], reviews:PRReview.Review[], pending_review:PRReview.Review?, err?:string)
+function M.fetch_comments_async(pr, cb)
+  local owner, name = pr.repo:match("^(.-)/(.-)$")
+  if not owner or not name then
+    Snacks.notify.error("Invalid repo format", { title = "PR Review" })
+    cb({}, {}, nil, "Invalid repo format")
+    return
+  end
+
+  get_comments_api().fetch_review_data_async(owner, name, pr.number, function(threads, reviews, pending_review, err)
+    if err then
+      if err:match("429") or err:match("throttled") or err:match("rate limit") then
+        Snacks.notify.warn(
+          "GitHub API rate limit hit. Comments may be incomplete.\nWait a moment and use <leader>rR to refresh.",
+          { title = "PR Review" }
+        )
+        cb({}, {}, nil, err)
+        return
+      end
+      Snacks.notify.error("Failed to fetch comments: " .. err, { title = "PR Review" })
+      cb({}, {}, nil, err)
+      return
+    end
+
+    cb(threads, reviews, pending_review, nil)
+  end)
 end
 
 -- Get file content at a specific ref
@@ -460,6 +608,18 @@ function M.is_git_clean()
   return output == nil or output == "" or output:match("^%s*$") ~= nil, nil
 end
 
+---@param cb fun(is_clean:boolean, err?:string)
+function M.is_git_clean_async(cb)
+  gh.exec_async("git status --porcelain", function(output, err)
+    if err then
+      cb(false, "Failed to check git status")
+      return
+    end
+    local is_clean = output == nil or output == "" or output:match("^%s*$") ~= nil
+    cb(is_clean, nil)
+  end)
+end
+
 -- Fetch a remote ref
 ---@param ref string
 ---@return boolean success
@@ -470,6 +630,18 @@ function M.fetch_ref(ref)
     return false, "Failed to fetch " .. ref
   end
   return true, nil
+end
+
+---@param ref string
+---@param cb fun(ok:boolean, err?:string)
+function M.fetch_ref_async(ref, cb)
+  gh.exec_async("git fetch origin " .. ref .. " 2>&1", function(_, err)
+    if err then
+      cb(false, "Failed to fetch " .. ref)
+      return
+    end
+    cb(true, nil)
+  end)
 end
 
 -- Clear cache

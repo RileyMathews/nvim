@@ -128,6 +128,10 @@ local function execute_graphql(query, variables)
   return gh.graphql(query, variables)
 end
 
+local function execute_graphql_async(query, variables, cb)
+  return gh.graphql_async(query, variables, cb)
+end
+
 local function map_comment(comment)
   local author = safe_get(comment, "author")
   local reply_to = safe_get(comment, "replyTo")
@@ -159,6 +163,52 @@ local function map_thread(thread)
     diff_side = (safe_get(thread, "diffSide") or "RIGHT"):lower(),
     comments = comments,
   }
+end
+
+---@param pr_data table
+---@return table[], table[], table?, string?
+local function parse_review_data(pr_data)
+  if not pr_data then
+    return {}, {}, nil, "Could not access PR data"
+  end
+
+  local threads = {}
+  for _, thread in ipairs((safe_get(safe_get(pr_data, "reviewThreads"), "nodes")) or {}) do
+    table.insert(threads, map_thread(thread))
+  end
+
+  local reviews = {}
+  local pending_review = nil
+  for _, review in ipairs((safe_get(safe_get(pr_data, "reviews"), "nodes")) or {}) do
+    local comments = {}
+    for _, c in ipairs((safe_get(safe_get(review, "comments"), "nodes")) or {}) do
+      local mapped = map_comment(c)
+      mapped.path = safe_get(c, "path")
+      mapped.line = safe_get(c, "line") or safe_get(c, "originalLine")
+      mapped.start_line = safe_get(c, "startLine") or safe_get(c, "originalStartLine")
+      mapped.diff_hunk = safe_get(c, "diffHunk")
+      table.insert(comments, mapped)
+    end
+
+    local review_author = safe_get(review, "author")
+    local mapped_review = {
+      id = tostring(safe_get(review, "id") or ""),
+      database_id = safe_get(review, "databaseId"),
+      author = review_author and review_author.login or "unknown",
+      state = safe_get(review, "state") or "COMMENTED",
+      body = safe_get(review, "body"),
+      submitted_at = safe_get(review, "submittedAt") or safe_get(review, "createdAt"),
+      comments = comments,
+    }
+
+    if mapped_review.state == "PENDING" and safe_get(review, "viewerDidAuthor") then
+      pending_review = mapped_review
+    else
+      table.insert(reviews, mapped_review)
+    end
+  end
+
+  return threads, reviews, pending_review, nil
 end
 
 ---@param threads table[]
@@ -221,47 +271,28 @@ function M.fetch_review_data(owner, repo, pr_number)
   end
 
   local pr_data = data and data.repository and data.repository.pullRequest
-  if not pr_data then
-    return {}, {}, nil, "Could not access PR data"
-  end
+  return parse_review_data(pr_data)
+end
 
-  local threads = {}
-  for _, thread in ipairs((safe_get(safe_get(pr_data, "reviewThreads"), "nodes")) or {}) do
-    table.insert(threads, map_thread(thread))
-  end
-
-  local reviews = {}
-  local pending_review = nil
-  for _, review in ipairs((safe_get(safe_get(pr_data, "reviews"), "nodes")) or {}) do
-    local comments = {}
-    for _, c in ipairs((safe_get(safe_get(review, "comments"), "nodes")) or {}) do
-      local mapped = map_comment(c)
-      mapped.path = safe_get(c, "path")
-      mapped.line = safe_get(c, "line") or safe_get(c, "originalLine")
-      mapped.start_line = safe_get(c, "startLine") or safe_get(c, "originalStartLine")
-      mapped.diff_hunk = safe_get(c, "diffHunk")
-      table.insert(comments, mapped)
+---@param owner string
+---@param repo string
+---@param pr_number number
+---@param cb fun(threads:table[], reviews:table[], pending_review:table?, err:string?)
+function M.fetch_review_data_async(owner, repo, pr_number, cb)
+  execute_graphql_async(QUERY_REVIEW_DATA, {
+    owner = owner,
+    repo = repo,
+    prNumber = pr_number,
+  }, function(data, err)
+    if err then
+      cb({}, {}, nil, err)
+      return
     end
 
-    local review_author = safe_get(review, "author")
-    local mapped_review = {
-      id = tostring(safe_get(review, "id") or ""),
-      database_id = safe_get(review, "databaseId"),
-      author = review_author and review_author.login or "unknown",
-      state = safe_get(review, "state") or "COMMENTED",
-      body = safe_get(review, "body"),
-      submitted_at = safe_get(review, "submittedAt") or safe_get(review, "createdAt"),
-      comments = comments,
-    }
-
-    if mapped_review.state == "PENDING" and safe_get(review, "viewerDidAuthor") then
-      pending_review = mapped_review
-    else
-      table.insert(reviews, mapped_review)
-    end
-  end
-
-  return threads, reviews, pending_review, nil
+    local pr_data = data and data.repository and data.repository.pullRequest
+    local threads, reviews, pending_review, parse_err = parse_review_data(pr_data)
+    cb(threads, reviews, pending_review, parse_err)
+  end)
 end
 
 ---@param thread_id string
