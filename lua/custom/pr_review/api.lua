@@ -644,6 +644,35 @@ function M.fetch_ref_async(ref, cb)
   end)
 end
 
+-- Checkout a PR branch locally
+---@param pr PRReview.PR
+---@param cb fun(ok:boolean, err?:string)
+function M.checkout_pr_async(pr, cb)
+  if not pr or not pr.number then
+    cb(false, "No PR to checkout")
+    return
+  end
+
+  local repo_arg = ""
+  if pr.repo and pr.repo ~= "" then
+    repo_arg = " --repo " .. vim.fn.shellescape(pr.repo)
+  end
+
+  local root = gh.repo_root()
+  local cmd = string.format("gh pr checkout %d%s", pr.number, repo_arg)
+  if root then
+    cmd = "cd " .. vim.fn.shellescape(root) .. " && " .. cmd
+  end
+
+  gh.exec_async(cmd, function(_, err)
+    if err then
+      cb(false, err)
+      return
+    end
+    cb(true, nil)
+  end)
+end
+
 -- Clear cache
 function M.clear_cache()
   cache.current_pr = nil

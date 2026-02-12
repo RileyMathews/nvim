@@ -41,6 +41,7 @@ return {
 			zls = {},
 			lua_ls = { cmd = { "lua-lsp" } },
 			pyright = {},
+			vtsls = {},
 		}
 
 		for server_name, server_settings in pairs(manual_servers) do

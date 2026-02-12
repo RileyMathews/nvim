@@ -18,6 +18,8 @@ local M = {}
 ---@field reviewed_files table<string, boolean>
 ---@field description_buf number?
 ---@field description_win number?
+---@field local_view_active boolean
+---@field local_view_buf number?
 
 ---@type PRReview.State
 local state = {
@@ -35,6 +37,8 @@ local state = {
   reviewed_files = {},
   description_buf = nil,
   description_win = nil,
+  local_view_active = false,
+  local_view_buf = nil,
 }
 
 -- Lazy load submodules
@@ -117,6 +121,8 @@ function M.reset_state()
     reviewed_files = {},
     description_buf = nil,
     description_win = nil,
+    local_view_active = false,
+    local_view_buf = nil,
   }
 end
 
@@ -166,41 +172,49 @@ local function load_pr_data_async(opts, cb)
 
       state.pr = pr
 
-      loader.update("Fetching PR refs...")
-      local remaining = 2
-      local function on_ref(ok, ref_name)
+      loader.update("Checking out PR branch...")
+      api_mod.checkout_pr_async(pr, function(ok, checkout_err)
         if not ok then
-          Snacks.notify.warn("Could not fetch " .. ref_name, { title = "PR Review" })
+          fail(checkout_err or "Failed to checkout PR branch")
+          return
         end
-        remaining = remaining - 1
-        if remaining == 0 then
-          loader.update("Fetching PR diff...")
-          api_mod.fetch_diff_async(pr.number, pr.repo, function(diff_text, diff_err)
-            if not diff_text then
-              fail(diff_err or "Failed to fetch diff")
-              return
-            end
 
-            state.diff_text = diff_text
-            state.files = api_mod.parse_diff_files(diff_text)
+        loader.update("Fetching PR refs...")
+        local remaining = 2
+        local function on_ref(ok, ref_name)
+          if not ok then
+            Snacks.notify.warn("Could not fetch " .. ref_name, { title = "PR Review" })
+          end
+          remaining = remaining - 1
+          if remaining == 0 then
+            loader.update("Fetching PR diff...")
+            api_mod.fetch_diff_async(pr.number, pr.repo, function(diff_text, diff_err)
+              if not diff_text then
+                fail(diff_err or "Failed to fetch diff")
+                return
+              end
 
-            loader.update("Fetching comments...")
-            api_mod.fetch_comments_async(pr, function(threads, reviews, pending)
-              state.threads = threads or {}
-              state.reviews = reviews or {}
-              state.pending_review = pending
-              loader.stop(true, "PR data loaded")
-              finish(true)
+              state.diff_text = diff_text
+              state.files = api_mod.parse_diff_files(diff_text)
+
+              loader.update("Fetching comments...")
+              api_mod.fetch_comments_async(pr, function(threads, reviews, pending)
+                state.threads = threads or {}
+                state.reviews = reviews or {}
+                state.pending_review = pending
+                loader.stop(true, "PR data loaded")
+                finish(true)
+              end)
             end)
-          end)
+          end
         end
-      end
 
-      api_mod.fetch_ref_async(pr.base_ref, function(ok)
-        on_ref(ok, "base ref: " .. pr.base_ref)
-      end)
-      api_mod.fetch_ref_async(pr.head_ref, function(ok)
-        on_ref(ok, "head ref: " .. pr.head_ref)
+        api_mod.fetch_ref_async(pr.base_ref, function(ok)
+          on_ref(ok, "base ref: " .. pr.base_ref)
+        end)
+        api_mod.fetch_ref_async(pr.head_ref, function(ok)
+          on_ref(ok, "head ref: " .. pr.head_ref)
+        end)
       end)
     end
 
@@ -396,6 +410,11 @@ function M.toggle_reviewed()
   end
 end
 
+-- Toggle between diff view and local file view
+function M.toggle_local_view()
+  get_diff().toggle_local_view()
+end
+
 -- Show file picker
 function M.show_picker()
   get_picker().open()
@@ -575,6 +594,9 @@ function M.setup_keymaps(bufnr)
   -- Mark files as reviewed
   vim.keymap.set("n", "<leader>rd", M.mark_reviewed, vim.tbl_extend("force", opts, { desc = "Mark file as reviewed (done)" }))
   vim.keymap.set("n", "<leader>rD", M.unmark_reviewed, vim.tbl_extend("force", opts, { desc = "Unmark file as reviewed" }))
+
+  -- Toggle local file view
+  vim.keymap.set("n", "<leader>rv", M.toggle_local_view, vim.tbl_extend("force", opts, { desc = "Toggle local file view" }))
 
   -- Fold controls
   vim.keymap.set("n", "<leader>rf", function()

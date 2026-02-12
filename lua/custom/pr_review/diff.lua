@@ -62,6 +62,34 @@ local function create_scratch_buffer(content, name, ft)
   return buf
 end
 
+local function set_diff_mode(win, enable)
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    return
+  end
+  vim.api.nvim_win_call(win, function()
+    if enable then
+      vim.cmd("diffthis")
+    else
+      vim.cmd("diffoff")
+    end
+  end)
+end
+
+local function set_diff_winbars(pr, file_path, base_sha, head_sha, left_win, right_win)
+  if not base_sha or not head_sha then
+    return
+  end
+  local base_title = string.format(" BASE: %s (%s @ %s)", file_path, pr.base_ref, base_sha:sub(1, 7))
+  local head_title = string.format(" HEAD: %s (%s @ %s)", file_path, pr.head_ref, head_sha:sub(1, 7))
+
+  if left_win and vim.api.nvim_win_is_valid(left_win) then
+    vim.wo[left_win].winbar = "%#DiffDelete#" .. base_title .. "%*"
+  end
+  if right_win and vim.api.nvim_win_is_valid(right_win) then
+    vim.wo[right_win].winbar = "%#DiffAdd#" .. head_title .. "%*"
+  end
+end
+
 -- Close existing diff view
 function M.close()
   local state = get_pr_review().get_state()
@@ -87,6 +115,8 @@ function M.close()
   get_pr_review().update_state({
     diff_buffers = { left = nil, right = nil },
     diff_wins = { left = nil, right = nil },
+    local_view_active = false,
+    local_view_buf = nil,
   })
 
   -- Return to original window if it exists
@@ -170,12 +200,8 @@ function M.open(file_path)
   vim.api.nvim_win_set_buf(right_win, right_buf)
 
   -- Enable diff mode on both windows
-  vim.api.nvim_win_call(left_win, function()
-    vim.cmd("diffthis")
-  end)
-  vim.api.nvim_win_call(right_win, function()
-    vim.cmd("diffthis")
-  end)
+  set_diff_mode(left_win, true)
+  set_diff_mode(right_win, true)
 
   -- Set window options
   for _, win in ipairs({ left_win, right_win }) do
@@ -196,6 +222,8 @@ function M.open(file_path)
   get_pr_review().update_state({
     diff_buffers = { left = left_buf, right = right_buf },
     diff_wins = { left = left_win, right = right_win },
+    local_view_active = false,
+    local_view_buf = nil,
   })
 
   -- Setup keymaps
@@ -211,11 +239,7 @@ function M.open(file_path)
   vim.api.nvim_set_current_win(right_win)
 
   -- Set window titles using winbar (show branch name @ short SHA)
-  local base_title = string.format(" BASE: %s (%s @ %s)", file_path, pr.base_ref, base_sha:sub(1, 7))
-  local head_title = string.format(" HEAD: %s (%s @ %s)", file_path, pr.head_ref, head_sha:sub(1, 7))
-
-  vim.wo[left_win].winbar = "%#DiffDelete#" .. base_title .. "%*"
-  vim.wo[right_win].winbar = "%#DiffAdd#" .. head_title .. "%*"
+  set_diff_winbars(pr, file_path, base_sha, head_sha, left_win, right_win)
 
   -- Show file position indicator
   local file_idx = state.current_file_index
@@ -224,6 +248,83 @@ function M.open(file_path)
     string.format("File %d/%d: %s", file_idx, total_files, file_path),
     { title = "PR Review", id = "pr_review_file" }
   )
+end
+
+-- Toggle between diff view and local file view
+function M.toggle_local_view()
+  local state = get_pr_review().get_state()
+  local pr = state.pr
+
+  if not pr then
+    Snacks.notify.warn("No PR loaded", { title = "PR Review" })
+    return
+  end
+
+  local left_win = state.diff_wins.left
+  local right_win = state.diff_wins.right
+  if not right_win or not vim.api.nvim_win_is_valid(right_win) then
+    Snacks.notify.warn("No diff view open", { title = "PR Review" })
+    return
+  end
+
+  local current_file = state.files[state.current_file_index]
+  if not current_file then
+    Snacks.notify.warn("No file selected", { title = "PR Review" })
+    return
+  end
+
+  local file_path = current_file.path
+  local base_sha = pr.base_sha
+  local head_sha = pr.head_sha
+
+  if state.local_view_active then
+    local diff_buf = state.diff_buffers.right
+    if not diff_buf or not vim.api.nvim_buf_is_valid(diff_buf) then
+      M.open(file_path)
+      return
+    end
+
+    vim.api.nvim_win_set_buf(right_win, diff_buf)
+    set_diff_mode(left_win, true)
+    set_diff_mode(right_win, true)
+    set_diff_winbars(pr, file_path, base_sha, head_sha, left_win, right_win)
+
+    get_pr_review().update_state({
+      local_view_active = false,
+      local_view_buf = nil,
+    })
+
+    Snacks.notify.info("Diff view restored", { title = "PR Review" })
+    return
+  end
+
+  if vim.fn.filereadable(file_path) ~= 1 then
+    Snacks.notify.warn("File not found in working tree", { title = "PR Review" })
+    return
+  end
+
+  vim.api.nvim_win_call(right_win, function()
+    vim.cmd("edit " .. vim.fn.fnameescape(file_path))
+  end)
+
+  local local_buf = vim.api.nvim_win_get_buf(right_win)
+  vim.b[local_buf].pr_review_file = file_path
+  vim.b[local_buf].pr_review_side = "right"
+  get_pr_review().setup_keymaps(local_buf)
+
+  set_diff_mode(left_win, false)
+  set_diff_mode(right_win, false)
+
+  if right_win and vim.api.nvim_win_is_valid(right_win) then
+    vim.wo[right_win].winbar = " LOCAL: " .. file_path .. " (working tree) "
+  end
+
+  get_pr_review().update_state({
+    local_view_active = true,
+    local_view_buf = local_buf,
+  })
+
+  Snacks.notify.info("Local file view", { title = "PR Review" })
 end
 
 -- Get line mapping information for the current cursor position or visual selection
