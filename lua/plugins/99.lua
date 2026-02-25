@@ -15,7 +15,7 @@ return 	{
 				print_on_error = true,
 			},
 
-			model = "anthropic/claude-opus-4-5",
+			model = "anthropic/claude-opus-4-6",
 
 			--- A new feature that is centered around tags
 			completion = {
@@ -73,7 +73,7 @@ return 	{
 		-- likely ill add a mode check and assert on required visual mode
 		-- so just prepare for it now
 		vim.keymap.set("v", "<leader>9v", function()
-			_99.visual_prompt()
+			_99.visual()
 		end , { desc = "Visual prompt with 99" })
 
 		--- if you have a request you dont want to make any changes, just cancel it
