@@ -37,6 +37,18 @@ local function copy_filepath()
 	local filepath = vim.fn.expand("%:.")
 	local text_to_copy = filepath
 
+	-- Check if in visual mode and append line range
+	local mode = vim.fn.mode()
+	if mode == "v" or mode == "V" or mode == "\22" then
+		local line_start = vim.fn.line("v")
+		local line_end = vim.fn.line(".")
+		-- Ensure start is always less than end
+		if line_start > line_end then
+			line_start, line_end = line_end, line_start
+		end
+		text_to_copy = filepath .. ":" .. line_start .. "-" .. line_end
+	end
+
 	vim.fn.system("wl-copy", text_to_copy)
 	vim.notify("Copied to clipboard: " .. text_to_copy, vim.log.levels.INFO)
 end
