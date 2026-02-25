@@ -62,8 +62,8 @@ return 	{
 		})
 
 		-- Create your own short cuts for the different types of actions
-		vim.keymap.set("n", "<leader>9f", function()
-			_99.fill_in_function()
+		vim.keymap.set("n", "<leader>9s", function()
+			_99.search()
 		end, { desc = "Fill in function with 99" })
 		-- take extra note that i have visual selection only in v mode
 		-- technically whatever your last visual selection is, will be used
@@ -77,7 +77,7 @@ return 	{
 		end , { desc = "Visual prompt with 99" })
 
 		--- if you have a request you dont want to make any changes, just cancel it
-		vim.keymap.set("n", "<leader>9s", function()
+		vim.keymap.set("n", "<leader>9S", function()
 			_99.stop_all_requests()
 		end , { desc = "Stop all 99 requests" })
 	end,
