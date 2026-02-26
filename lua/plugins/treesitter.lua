@@ -34,7 +34,15 @@ return {
 		require("nvim-treesitter").install(filetypes)
 		vim.api.nvim_create_autocmd('FileType', {
 			pattern = filetypes,
-			callback = function() vim.treesitter.start() end,
+			callback = function(args)
+				local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
+				if lang then
+					local ok, err = pcall(vim.treesitter.start, args.buf, lang)
+					if not ok then
+						vim.notify("Treesitter failed for " .. lang .. ": " .. tostring(err), vim.log.levels.ERROR)
+					end
+				end
+			end,
 		})
 		require("nvim-treesitter-textobjects").setup({
 			select = {
