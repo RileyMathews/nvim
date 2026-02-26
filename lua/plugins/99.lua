@@ -15,7 +15,7 @@ return 	{
 				print_on_error = true,
 			},
 
-			model = "anthropic/claude-opus-4-6",
+			model = "openai/gpt-5.3-codex",
 
 			--- A new feature that is centered around tags
 			completion = {
@@ -80,5 +80,9 @@ return 	{
 		vim.keymap.set("n", "<leader>9S", function()
 			_99.stop_all_requests()
 		end , { desc = "Stop all 99 requests" })
+
+		vim.keymap.set("n", "<leader>9l", function()
+			_99.view_logs()
+		end , { desc = "View 99 logs" })
 	end,
 }
