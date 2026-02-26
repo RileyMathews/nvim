@@ -1,8 +1,9 @@
 return {
 	-- Highlight, edit, and navigate code
 	"nvim-treesitter/nvim-treesitter",
+	branch = "main",
 	dependencies = {
-		"nvim-treesitter/nvim-treesitter-textobjects",
+		{ "nvim-treesitter/nvim-treesitter-textobjects", branch = "main" },
 		"RRethy/nvim-treesitter-endwise",
 		-- "windwp/nvim-ts-autotag",
 		-- "windwp/nvim-autopairs",
