@@ -76,6 +76,10 @@ return 	{
 			_99.visual()
 		end , { desc = "Visual prompt with 99" })
 
+		vim.keymap.set("n", "<leader>9p", function()
+			require("custom.snacks_model_picker").select_model()
+		end , { desc = "Visual prompt with 99" })
+
 		--- if you have a request you dont want to make any changes, just cancel it
 		vim.keymap.set("n", "<leader>9S", function()
 			_99.stop_all_requests()
