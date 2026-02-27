@@ -184,6 +184,13 @@ return {
 			desc = "Resume",
 		},
 		{
+			"<leader>sc",
+			function()
+				Snacks.picker.git_diff()
+			end,
+			desc = "Changes",
+		},
+		{
 			"<leader>sC",
 			function()
 				Snacks.picker.colorschemes()
