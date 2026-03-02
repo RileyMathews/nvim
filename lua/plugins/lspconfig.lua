@@ -42,6 +42,7 @@ return {
 			lua_ls = { cmd = { "lua-lsp" } },
 			pyright = {},
 			vtsls = {},
+			rust_analyzer = {},
 		}
 
 		for server_name, server_settings in pairs(manual_servers) do
