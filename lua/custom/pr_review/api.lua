@@ -596,6 +596,61 @@ function M.submit_review(pr, review_id, event, body)
   return true, nil
 end
 
+-- Update a review comment body using GraphQL
+---@param comment_id string
+---@param new_body string
+---@return boolean, string?
+function M.update_review_comment(comment_id, new_body)
+  local query = [[
+    mutation($commentId: ID!, $body: String!) {
+      updatePullRequestReviewComment(input: {
+        pullRequestReviewCommentId: $commentId
+        body: $body
+      }) {
+        pullRequestReviewComment { id body }
+      }
+    }
+  ]]
+
+  local variables = {
+    commentId = comment_id,
+    body = new_body,
+  }
+
+  local _, err = gh.graphql(query, variables)
+  if err then
+    return false, err
+  end
+
+  return true, nil
+end
+
+-- Delete a review comment using GraphQL
+---@param comment_id string
+---@return boolean, string?
+function M.delete_review_comment(comment_id)
+  local query = [[
+    mutation($commentId: ID!) {
+      deletePullRequestReviewComment(input: {
+        id: $commentId
+      }) {
+        pullRequestReviewComment { id }
+      }
+    }
+  ]]
+
+  local variables = {
+    commentId = comment_id,
+  }
+
+  local _, err = gh.graphql(query, variables)
+  if err then
+    return false, err
+  end
+
+  return true, nil
+end
+
 -- Check if git working directory is clean
 ---@return boolean is_clean
 ---@return string? error
