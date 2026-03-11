@@ -41,7 +41,7 @@ return {
 			zls = {},
 			lua_ls = { cmd = { "lua-lsp" } },
 			pyright = {},
-			vtsls = {},
+			vtsls = { cmd = { "tsgo", "--lsp", "--stdio"} },
 			rust_analyzer = {},
 		}
 
