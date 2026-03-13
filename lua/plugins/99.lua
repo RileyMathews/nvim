@@ -15,7 +15,7 @@ return 	{
 				print_on_error = true,
 			},
 
-			model = "openai/gpt-5.3-codex",
+			model = "opencode/kimi-k2.5",
 
 			--- A new feature that is centered around tags
 			completion = {
