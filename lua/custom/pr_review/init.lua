@@ -420,6 +420,11 @@ function M.show_picker()
   get_picker().open()
 end
 
+-- Show pending review comments picker
+function M.pending_comments()
+  get_picker().open_pending_comments()
+end
+
 -- Open PR description buffer
 function M.open_description()
   local pr = state.pr
@@ -501,10 +506,6 @@ function M.add_line_comment_visual()
   get_actions().add_line_comment_visual()
 end
 
-function M.add_general_comment()
-  get_actions().add_general_comment()
-end
-
 function M.reply()
   get_actions().reply_to_thread()
 end
@@ -546,7 +547,7 @@ function M.show_status()
     local comment_count = #state.pending_review.comments
     table.insert(status_lines, "")
     table.insert(status_lines, string.format("PENDING REVIEW: %d comments", comment_count))
-    table.insert(status_lines, "Submit with <leader>rS")
+    table.insert(status_lines, "Browse with <leader>rP | Submit with <leader>rS")
   else
     table.insert(status_lines, "")
     table.insert(status_lines, "No pending review")
@@ -568,7 +569,6 @@ function M.setup_keymaps(bufnr)
   -- Comments (normal mode)
   vim.keymap.set("n", "<leader>rc", M.comment, vim.tbl_extend("force", opts, { desc = "Add comment (smart)" }))
   vim.keymap.set("n", "<leader>rl", M.add_line_comment, vim.tbl_extend("force", opts, { desc = "Add line comment" }))
-  vim.keymap.set("n", "<leader>rg", M.add_general_comment, vim.tbl_extend("force", opts, { desc = "Add general comment" }))
   vim.keymap.set("n", "<leader>rr", M.reply, vim.tbl_extend("force", opts, { desc = "Reply to thread" }))
   vim.keymap.set("n", "K", M.show_comment_details, vim.tbl_extend("force", opts, { desc = "Show comment details" }))
 
@@ -579,6 +579,7 @@ function M.setup_keymaps(bufnr)
   -- Review workflow
   vim.keymap.set("n", "<leader>rs", M.start_review, vim.tbl_extend("force", opts, { desc = "Start review" }))
   vim.keymap.set("n", "<leader>rS", M.submit_review, vim.tbl_extend("force", opts, { desc = "Submit review" }))
+  vim.keymap.set("n", "<leader>rP", M.pending_comments, vim.tbl_extend("force", opts, { desc = "Pending review comments" }))
 
   -- Refresh and close
   vim.keymap.set("n", "<leader>rR", M.refresh, vim.tbl_extend("force", opts, { desc = "Refresh comments" }))

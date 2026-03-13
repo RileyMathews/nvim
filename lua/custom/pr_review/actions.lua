@@ -68,33 +68,6 @@ function M.smart_comment_visual()
   M.smart_comment(true)
 end
 
--- Add a general comment on the PR (not line-specific)
-function M.add_general_comment()
-  local state = get_pr_review().get_state()
-  local pr = state.pr
-
-  if not pr then
-    Snacks.notify.warn("No PR loaded", { title = "PR Review" })
-    return
-  end
-
-  get_compose().run({
-    title = "Comment on PR #" .. pr.number,
-    notify_title = "PR Review",
-    posting_message = "Posting comment...",
-    success_message = "Comment posted",
-    submit = function(body)
-      return get_api().post_comment(pr, body)
-    end,
-    map_error = function(err)
-      return "Failed to post comment: " .. (err or "unknown error")
-    end,
-    on_success = function()
-      get_pr_review().refresh()
-    end,
-  })
-end
-
 -- Add a line comment at cursor position or visual selection
 ---@param visual? boolean Whether this was called from visual mode
 function M.add_line_comment(visual)
@@ -124,9 +97,7 @@ function M.add_line_comment(visual)
     title = title,
     notify_title = "PR Review",
     posting_message = "Posting line comment...",
-    success_message = function()
-      return state.pending_review and "Comment added to pending review" or "Comment posted"
-    end,
+    success_message = "Comment added to pending review",
     submit = function(body)
       local opts = {
         path = line_info.file,
@@ -136,18 +107,24 @@ function M.add_line_comment(visual)
         start_line = line_info.start_line,
       }
 
-      -- Check if we have a pending review (use GraphQL ID for GraphQL mutation)
-      if state.pending_review then
-        return get_api().add_review_comment(pr, state.pending_review.id, opts)
-      else
-        return get_api().post_line_comment(pr, opts)
+      -- Auto-create a pending review if none exists
+      if not state.pending_review then
+        local review_id, start_err = get_api().start_review(pr)
+        if not review_id then
+          return false, start_err
+        end
+        get_pr_review().refresh()
+        state = get_pr_review().get_state()
+        if not state.pending_review then
+          return false, "Review created but failed to load review data. Try refreshing with <leader>rR"
+        end
+        Snacks.notify.info("Review started — comments will be pending until you submit with <leader>rS", { title = "PR Review" })
       end
+
+      return get_api().add_review_comment(pr, state.pending_review.id, opts)
     end,
     map_error = function(err)
-      if state.pending_review then
-        return "Failed to add comment: " .. (err or "unknown error")
-      end
-      return "Failed to post comment: " .. (err or "unknown error")
+      return "Failed to add comment: " .. (err or "unknown error")
     end,
     on_success = function()
       get_pr_review().refresh()
@@ -217,19 +194,26 @@ function M.reply_to_comment(comment_id, thread_id)
     return
   end
 
-  -- Check if we have a pending review - the GraphQL mutation works with pending reviews
-  local has_pending = state.pending_review ~= nil
-  local title = "Reply to comment"
-  if has_pending then
-    title = "Reply to comment (will be added to pending review)"
-  end
-
   get_compose().run({
-    title = title,
+    title = "Reply to comment (pending review)",
     notify_title = "PR Review",
     posting_message = "Posting reply...",
-    success_message = has_pending and "Reply added to pending review" or "Reply posted",
+    success_message = "Reply added to pending review",
     submit = function(body)
+      -- Auto-create a pending review if none exists
+      if not state.pending_review then
+        local review_id, start_err = get_api().start_review(pr)
+        if not review_id then
+          return false, start_err
+        end
+        get_pr_review().refresh()
+        state = get_pr_review().get_state()
+        if not state.pending_review then
+          return false, "Review created but failed to load review data. Try refreshing with <leader>rR"
+        end
+        Snacks.notify.info("Review started — comments will be pending until you submit with <leader>rS", { title = "PR Review" })
+      end
+
       return get_api().reply_to_comment(pr, comment_id, body, thread_id)
     end,
     map_error = function(err)
@@ -359,12 +343,12 @@ function M.show_actions_menu()
 
   local actions = {
     { name = "Add Line Comment", action = M.add_line_comment, icon = " " },
-    { name = "Add General Comment", action = M.add_general_comment, icon = " " },
     { name = "Reply to Thread", action = M.reply_to_thread, icon = " " },
   }
 
   -- Review workflow actions
   if state.pending_review then
+    table.insert(actions, { name = "Browse Pending Comments", action = get_pr_review().pending_comments, icon = " " })
     table.insert(actions, { name = "Submit Review", action = M.submit_review, icon = " " })
   else
     table.insert(actions, { name = "Start Review", action = M.start_review, icon = " " })

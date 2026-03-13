@@ -64,7 +64,7 @@ return 	{
 		-- Create your own short cuts for the different types of actions
 		vim.keymap.set("n", "<leader>9s", function()
 			_99.search()
-		end, { desc = "Fill in function with 99" })
+		end, { desc = "Search" })
 		-- take extra note that i have visual selection only in v mode
 		-- technically whatever your last visual selection is, will be used
 		-- so i have this set to visual mode so i dont screw up and use an

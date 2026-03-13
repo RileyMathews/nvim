@@ -244,4 +244,149 @@ function M.open()
   })
 end
 
+-- Open picker showing pending review comments
+function M.open_pending_comments()
+  local state = get_pr_review().get_state()
+
+  if not state.pending_review or not state.pending_review.comments or #state.pending_review.comments == 0 then
+    Snacks.notify.info("No pending review comments", { title = "PR Review" })
+    return
+  end
+
+  -- Build items from pending review comments
+  local items = {}
+  for i, comment in ipairs(state.pending_review.comments) do
+    local line = comment.line or 0
+    local path = comment.path or "unknown"
+    table.insert(items, {
+      idx = i,
+      text = path .. ":" .. line .. " " .. (comment.body or ""),
+      comment = comment,
+      path = path,
+      line = line,
+      start_line = comment.start_line,
+      body = comment.body or "",
+    })
+  end
+
+  local function handle_edit(picker)
+    local item = picker:current()
+    if not item then
+      return
+    end
+    picker:close()
+    vim.schedule(function()
+      require("custom.pr_shared.reply").run({
+        title = "Edit comment on " .. item.path .. ":" .. item.line,
+        notify_title = "PR Review",
+        template = item.body,
+        posting_message = "Updating comment...",
+        success_message = "Comment updated",
+        submit = function(body)
+          return require("custom.pr_review.api").update_review_comment(item.comment.id, body)
+        end,
+        map_error = function(err)
+          return "Failed to update comment: " .. (err or "unknown error")
+        end,
+        on_success = function()
+          get_pr_review().refresh()
+        end,
+      })
+    end)
+  end
+
+  local function handle_delete(picker)
+    local item = picker:current()
+    if not item then
+      return
+    end
+    picker:close()
+    vim.schedule(function()
+      vim.ui.select({ "Yes", "No" }, { prompt = "Delete this comment?" }, function(choice)
+        if choice == "Yes" then
+          local ok, err = require("custom.pr_review.api").delete_review_comment(item.comment.id)
+          if ok then
+            Snacks.notify.info("Comment deleted", { title = "PR Review" })
+            get_pr_review().refresh()
+            vim.schedule(function()
+              M.open_pending_comments()
+            end)
+          else
+            Snacks.notify.error("Failed to delete comment: " .. (err or "unknown error"), { title = "PR Review" })
+          end
+        end
+      end)
+    end)
+  end
+
+  Snacks.picker({
+    title = "  Pending Review Comments",
+    items = items,
+    format = function(item)
+      local ret = {} ---@type snacks.picker.Highlight[]
+
+      -- File icon based on filetype
+      local file_icon, file_hl
+      local ok, devicons = pcall(require, "nvim-web-devicons")
+      if ok then
+        local ext = item.path:match("%.([^%.]+)$")
+        file_icon, file_hl = devicons.get_icon(item.path, ext, { default = true })
+      end
+      file_icon = file_icon or "*"
+      file_hl = file_hl or "Normal"
+      ret[#ret + 1] = { file_icon .. " ", file_hl }
+
+      -- File path with line number
+      local location = item.path .. ":"
+      if item.start_line then
+        location = location .. item.start_line .. "-" .. item.line
+      else
+        location = location .. item.line
+      end
+      ret[#ret + 1] = { location }
+
+      -- Separator
+      ret[#ret + 1] = { " — " }
+
+      -- Body preview: first 60 chars, single-lined
+      local preview = item.body:gsub("\n", " "):sub(1, 60)
+      ret[#ret + 1] = { preview, "Comment" }
+
+      return ret
+    end,
+    preview = "none",
+    layout = {
+      preset = "select",
+      layout = {
+        width = 0.7,
+        min_width = 90,
+        height = 0.5,
+      },
+    },
+    sort = { fields = { "idx" } },
+    confirm = function(picker, item)
+      picker:close()
+      if item then
+        vim.schedule(function()
+          require("custom.pr_review.diff").jump_to_line(item.path, item.line, "right")
+        end)
+      end
+    end,
+    win = {
+      input = {
+        keys = {
+          ["e"] = { handle_edit, mode = { "n", "i" }, desc = "Edit comment" },
+          ["<c-d>"] = { handle_delete, mode = { "n", "i" }, desc = "Delete comment" },
+        },
+      },
+      list = {
+        keys = {
+          ["e"] = { handle_edit, mode = { "n", "i" }, desc = "Edit comment" },
+          ["d"] = { handle_delete, desc = "Delete comment" },
+        },
+      },
+    },
+  })
+end
+
 return M
