@@ -1,4 +1,4 @@
-local ghciwatch = require("custom.ghciwatch").setup()
+require("custom.ghciwatch").setup()
 local conform = require("conform")
 local trouble = require("trouble")
 
