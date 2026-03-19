@@ -7,7 +7,6 @@ local trouble = require("trouble")
 --     use_fake_data = false, -- Use real GitHub API
 -- })
 
--- local pr_review = require("custom.pr_review")
 
 -- half page jumping
 vim.keymap.set("n", "<C-d>", "<C-d>zz")
@@ -89,7 +88,6 @@ vim.keymap.set({ "x", "o" }, "as", function()
   require "nvim-treesitter-textobjects.select".select_textobject("@local.scope", "locals")
 end)
 
--- vim.keymap.set("n", "<leader>ro", pr_review.open, { desc = "Open Prs" })
 --
 -- vim.keymap.set("n", "<leader>prt", pr_comments.toggle, { desc = "Toggle" })
 -- vim.keymap.set("n", "<leader>prr", pr_comments.toggle_resolved, { desc = "Toggle resolved" })

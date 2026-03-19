@@ -253,7 +253,7 @@ local function reply_to_thread(thread)
     end,
     map_error = function(err)
       if err and err:find("pending review") then
-        return "Cannot reply: you have a pending review. Submit it from PR Review first"
+        return "Cannot reply: you have a pending review on GitHub. Submit it first"
       end
       return "Failed to post reply: " .. (err or "unknown error")
     end,
