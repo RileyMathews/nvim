@@ -81,13 +81,13 @@ return {
 			end,
 			desc = "Search Notification History",
 		},
-		-- {
-		-- 	"<leader>e",
-		-- 	function()
-		-- 		Snacks.explorer()
-		-- 	end,
-		-- 	desc = "File Explorer",
-		-- },
+		{
+			"<leader>e",
+			function()
+				Snacks.explorer()
+			end,
+			desc = "File Explorer",
+		},
 		-- find
 		{
 			"<leader>sb",
@@ -189,13 +189,6 @@ return {
 				Snacks.picker.git_diff()
 			end,
 			desc = "Changes",
-		},
-		{
-			"<leader>sC",
-			function()
-				Snacks.picker.colorschemes()
-			end,
-			desc = "Colorschemes",
 		},
 		-- LSP
 		{
