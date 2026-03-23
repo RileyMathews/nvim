@@ -44,6 +44,7 @@ return {
 			tsgo = {},
 			clangd = {},
 			rust_analyzer = {},
+			ty = {},
 		}
 
 		for server_name, server_settings in pairs(manual_servers) do
