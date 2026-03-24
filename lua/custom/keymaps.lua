@@ -85,7 +85,3 @@ vim.keymap.set("n", "<leader>cf", function()
 	conform.format({ timeout_ms = 3000 })
 end, { desc = "[F]ormat" })
 
-vim.keymap.set('n', '<C-h>', require('smart-splits').move_cursor_left)
-vim.keymap.set('n', '<C-j>', require('smart-splits').move_cursor_down)
-vim.keymap.set('n', '<C-k>', require('smart-splits').move_cursor_up)
-vim.keymap.set('n', '<C-l>', require('smart-splits').move_cursor_right)
