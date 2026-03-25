@@ -59,7 +59,6 @@ return {
 	keys = {
 		{ "<leader>nh", "<cmd>lua Snacks.notifier.show_history()<CR>", desc = "History" },
 		{ "<leader>nc", "<cmd>lua Snacks.notifier.hide()<CR>", desc = "clear" },
-		{ "<leader>gp", "<cmd>lua Snacks.picker.gh_pr()<CR>", desc = "GitHub" },
 		{
 			"<leader>sf",
 			function()
@@ -235,7 +234,7 @@ return {
 			desc = "[G]it [O]pen",
 		},
 		{
-			"<leader>gh",
+			"<leader>ghw",
 			function()
 				Snacks.gitbrowse.open({ branch = "master" })
 			end,
