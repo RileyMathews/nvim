@@ -85,8 +85,3 @@ vim.keymap.set("n", "<leader>cf", function()
 	conform.format({ timeout_ms = 3000 })
 end, { desc = "[F]ormat" })
 
-vim.keymap.set("n", "<C-h>", "<cmd>wincmd h<CR>")
-vim.keymap.set("n", "<C-j>", "<cmd>wincmd j<CR>")
-vim.keymap.set("n", "<C-k>", "<cmd>wincmd k<CR>")
-vim.keymap.set("n", "<C-l>", "<cmd>wincmd l<CR>")
-
