@@ -80,13 +80,6 @@ return {
 			end,
 			desc = "Search Notification History",
 		},
-		{
-			"<leader>e",
-			function()
-				Snacks.explorer()
-			end,
-			desc = "File Explorer",
-		},
 		-- find
 		{
 			"<leader>sb",
