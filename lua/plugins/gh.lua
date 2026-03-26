@@ -67,8 +67,8 @@ return {
         config = function()
             require('ghlite').setup({
                 debug = false, -- if set to true debugging information is written to ~/.ghlite.log file
-                view_split = 'vsplit', -- set to empty string '' to open in active buffer, use 'tabnew' to open in tab
-                diff_split = 'vsplit', -- set to empty string '' to open in active buffer, use 'tabnew' to open in tab
+                view_split = '', -- set to empty string '' to open in active buffer, use 'tabnew' to open in tab
+                diff_split = 'diffview', -- set to empty string '' to open in active buffer, use 'tabnew' to open in tab
                 diff_tool = 'auto', -- 'diffview', 'codediff', or 'auto' - which tool to use for GHLitePRDiffview
                 comment_split = 'split', -- set to empty string '' to open in active buffer, use 'tabnew' to open in tab
                 open_command = 'open', -- open command to use, e.g. on Linux you might want to use xdg-open

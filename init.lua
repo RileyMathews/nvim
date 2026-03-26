@@ -6,9 +6,9 @@ require("custom.auto_commands")
 
 local ghlite_config = {
   debug = false,
-  view_split = 'vsplit',
+  view_split = '',
   diff_split = 'vsplit',
-  diff_tool = 'auto',
+  diff_tool = 'diffview',
   comment_split = 'split',
   open_command = 'open',
   merge = {
