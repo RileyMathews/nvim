@@ -60,10 +60,10 @@ return {
             "nvim-tree/nvim-web-devicons",
         },
     },
-    { 'sindrets/diffview.nvim' },
     {
-        'daliusd/ghlite.nvim',
-        depencencies = { 'sindrets/diffview.nvim' },
+        dir ='~/code/ghlite',
+        dependencies = { 'sindrets/diffview.nvim' },
+        lazy = false,
         config = function()
             require('ghlite').setup({
                 debug = false, -- if set to true debugging information is written to ~/.ghlite.log file
