@@ -39,7 +39,7 @@ return {
 			djlsp = {},
 			gopls = {},
 			zls = {},
-			lua_ls = { cmd = { "lua-lsp" } },
+			lua_ls = {},
 			pyright = {},
 			tsgo = {},
 			clangd = {},
