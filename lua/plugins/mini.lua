@@ -5,11 +5,11 @@ return {
 			use_icons = true,
 		})
 		require("mini.pairs").setup()
-		require("mini.diff").setup({
-			view = {
-				style = "sign",
-			},
-		})
+		-- require("mini.diff").setup({
+		-- 	view = {
+		-- 		style = "sign",
+		-- 	},
+		-- })
 		require("mini.move").setup({
 			mappings = {
 				line_left = "",
