@@ -85,4 +85,3 @@ vim.keymap.set("n", "<leader>cf", function()
 	conform.format({ timeout_ms = 3000 })
 end, { desc = "[F]ormat" })
 
-vim.keymap.set("n", "<leader>e", MiniFiles.open)
