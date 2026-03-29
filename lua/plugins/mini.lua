@@ -4,7 +4,7 @@ return {
 		require("mini.statusline").setup({
 			use_icons = true,
 		})
-		-- require("mini.pairs").setup()
+		require("mini.pairs").setup()
 		require("mini.diff").setup({
 			view = {
 				style = "sign",

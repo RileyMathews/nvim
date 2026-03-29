@@ -94,3 +94,4 @@ vim.api.nvim_create_autocmd("LspProgress", {
     })
   end,
 })
+
