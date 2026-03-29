@@ -22,5 +22,6 @@ return {
 				down = "J",
 			},
 		})
+		require("mini.files").setup()
 	end,
 }
