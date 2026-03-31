@@ -95,3 +95,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
   end,
 })
 
+
+local new_func = function()
+
+end

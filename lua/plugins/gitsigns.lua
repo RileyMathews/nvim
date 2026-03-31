@@ -4,6 +4,7 @@ return { -- Adds git related signs to the gutter, as well as utilities for manag
 	---@type Gitsigns.Config
 	---@diagnostic disable-next-line: missing-fields
 	opts = {
+		attach_to_untracked = true,
 		signs = {
 			add = { text = '+' }, ---@diagnostic disable-line: missing-fields
 			change = { text = '~' }, ---@diagnostic disable-line: missing-fields
@@ -11,5 +12,29 @@ return { -- Adds git related signs to the gutter, as well as utilities for manag
 			topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
 			changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
 		},
+		on_attach = function()
+			local gitsigns = require("gitsigns")
+			vim.keymap.set("n", "<leader>gs", gitsigns.stage_hunk)
+			local function map(mode, l, r, opts)
+				opts = opts or {}
+				opts.buffer = bufnr
+				vim.keymap.set(mode, l, r, opts)
+			end
+			map('n', ']c', function()
+				if vim.wo.diff then
+					vim.cmd.normal({']c', bang = true})
+				else
+					gitsigns.nav_hunk('next')
+				end
+			end)
+
+			map('n', '[c', function()
+				if vim.wo.diff then
+					vim.cmd.normal({'[c', bang = true})
+				else
+					gitsigns.nav_hunk('prev')
+				end
+			end)
+		end
 	},
 }
