@@ -13,7 +13,7 @@ return {
 			{ "<leader>j", group = "[J]ump (flash)" },
 			{ "<leader>o", group = "octo.nvim" },
 			{ "<leader>u", group = "ghlite.nvim" },
-			{ "<leader>g", group = "[G]it/[G]hciwatch" },
+			{ "<leader>g", group = "[G]it" },
 			{ "<leader>pr", group = "[P][R] comments" },
 			{ "<leader>9", group = "[9]9" },
 		})

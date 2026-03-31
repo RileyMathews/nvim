@@ -14,7 +14,7 @@ return { -- Adds git related signs to the gutter, as well as utilities for manag
 		},
 		on_attach = function()
 			local gitsigns = require("gitsigns")
-			vim.keymap.set("n", "<leader>gs", gitsigns.stage_hunk)
+			vim.keymap.set("n", "<leader>gs", gitsigns.stage_hunk, { desc = "[S]tage"})
 			local function map(mode, l, r, opts)
 				opts = opts or {}
 				opts.buffer = bufnr
@@ -26,7 +26,7 @@ return { -- Adds git related signs to the gutter, as well as utilities for manag
 				else
 					gitsigns.nav_hunk('next')
 				end
-			end)
+			end, { desc = "Next change" })
 
 			map('n', '[c', function()
 				if vim.wo.diff then
@@ -34,7 +34,7 @@ return { -- Adds git related signs to the gutter, as well as utilities for manag
 				else
 					gitsigns.nav_hunk('prev')
 				end
-			end)
+			end, { desc = "Previosu change" })
 		end
 	},
 }
