@@ -219,19 +219,5 @@ return {
 			end,
 			desc = "Goto [T]ype Definition",
 		},
-		{
-			"<leader>go",
-			function()
-				Snacks.lazygit.open()
-			end,
-			desc = "[G]it [O]pen",
-		},
-		{
-			"<leader>ghw",
-			function()
-				Snacks.gitbrowse.open({ branch = "master" })
-			end,
-			desc = "[G]it [H]ub",
-		},
 	},
 }
