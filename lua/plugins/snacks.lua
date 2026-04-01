@@ -178,7 +178,7 @@ return {
 		{
 			"<leader>sc",
 			function()
-				Snacks.picker.git_diff()
+				Snacks.picker.git_status()
 			end,
 			desc = "Changes",
 		},
