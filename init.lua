@@ -95,3 +95,10 @@ vim.api.nvim_create_autocmd("LspProgress", {
   end,
 })
 
+require("vim._core.ui2").enable({
+  enabled = true,
+  msg = { targets = 'msg' }
+})
+
+
+vim.opt.completeopt = { "menuone", "noselect", "popup" }

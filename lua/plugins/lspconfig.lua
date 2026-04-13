@@ -1,8 +1,6 @@
 return {
 	"neovim/nvim-lspconfig",
 	dependencies = {
-		"williamboman/mason.nvim",
-		"williamboman/mason-lspconfig.nvim",
 		{
 			"folke/lazydev.nvim",
 			ft = "lua",
@@ -18,13 +16,6 @@ return {
 	},
 	-- event = "BufReadPre",
 	config = function()
-		require("mason").setup()
-		require("mason-lspconfig").setup({
-			ensure_installed = {},
-			automatic_enable = true,
-		})
-
-		-- This bit is for servers not managed via mason
 		local manual_servers = {
 			-- overriding hls to start static-ls instead
 			hls = {
@@ -34,8 +25,6 @@ return {
 			-- this just lets neovim know its there when I want
 			-- to edit files in neovim
 			gdscript = {},
-			-- I install djlsp via mason but have had trouble figuring out
-			-- how to get it running automatically without also adding it here :(
 			djlsp = {},
 			gopls = {},
 			zls = {},
