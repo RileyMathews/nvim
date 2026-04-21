@@ -34,7 +34,7 @@ return {
 			clangd = {},
 			rust_analyzer = {},
 			ty = {},
-			kotlin_language_server = {},
+			kotlin_lsp = {},
 		}
 
 		for server_name, server_settings in pairs(manual_servers) do
