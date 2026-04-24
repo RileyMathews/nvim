@@ -64,8 +64,7 @@ return {
 					ghlite.open_pr(pr_number)
 				end
 			end, { silent = true, desc = 'Open PR by number' })
-			vim.keymap.set('n', '<leader>ua', ghlite.approve_pr, { silent = true, desc = 'PR Approve' })
-			vim.keymap.set('n', '<leader>ur', ghlite.request_changes_pr, { silent = true, desc = 'PR Request changes' })
+			vim.keymap.set('n', '<leader>us', ghlite.submit_review, { silent = true, desc = 'PR Approve' })
 			vim.keymap.set('n', '<leader>uc', ghlite.comment_on_pr, { silent = true, desc = 'PR top-level comment' })
 			vim.keymap.set('n', '<leader>um', ghlite.comment_on_line, { silent = true, desc = 'PR Add comment' })
 			vim.keymap.set('x', '<leader>um', ghlite.comment_on_line, { silent = true, desc = 'PR Add comment' })
