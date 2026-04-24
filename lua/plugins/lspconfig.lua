@@ -34,6 +34,9 @@ return {
 			clangd = {},
 			rust_analyzer = {},
 			ty = {},
+			kotlin_lsp = {
+				single_file_support = false,
+			},
 		}
 
 		for server_name, server_settings in pairs(manual_servers) do
