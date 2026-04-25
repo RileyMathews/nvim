@@ -101,4 +101,4 @@ require("vim._core.ui2").enable({
 })
 
 
-vim.opt.completeopt = { "menuone", "noselect", "popup" }
+-- vim.opt.completeopt = { "menuone", "noselect", "popup" }
