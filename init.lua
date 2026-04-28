@@ -100,9 +100,6 @@ require("vim._core.ui2").enable({
   msg = { targets = 'msg' }
 })
 
-
-vim.opt.completeopt = { "menuone", "noselect", "popup" }
-
 vim.api.nvim_create_user_command('TSStatus', function(opts)
   local ft = vim.bo.filetype
   local lang = opts.args ~= '' and opts.args or vim.treesitter.language.get_lang(ft)
