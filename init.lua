@@ -100,5 +100,30 @@ require("vim._core.ui2").enable({
   msg = { targets = 'msg' }
 })
 
+vim.api.nvim_create_user_command('TSStatus', function(opts)
+  local ft = vim.bo.filetype
+  local lang = opts.args ~= '' and opts.args or vim.treesitter.language.get_lang(ft)
 
--- vim.opt.completeopt = { "menuone", "noselect", "popup" }
+  if not lang then
+    vim.notify('No Tree-sitter language for filetype: ' .. ft, vim.log.levels.WARN)
+    return
+  end
+
+  local loaded, load_err = vim.treesitter.language.add(lang)
+  local parser, parser_err = vim.treesitter.get_parser(0, lang)
+  local query_files = vim.treesitter.query.get_files(lang, 'highlights')
+
+  local inspect_ok, info = pcall(vim.treesitter.language.inspect, lang)
+
+  vim.print({
+    filetype = ft,
+    lang = lang,
+    language_loaded = loaded == true,
+    load_error = load_err,
+    parser_attached_to_buffer = parser ~= nil,
+    parser_error = parser_err,
+    has_highlights_query = #query_files > 0,
+    highlight_query_files = query_files,
+    abi_version = inspect_ok and info.abi_version or nil,
+  })
+end, { nargs = '?' })
