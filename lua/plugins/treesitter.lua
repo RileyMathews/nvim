@@ -1,9 +1,10 @@
 return {
 	-- Highlight, edit, and navigate code
-	"nvim-treesitter/nvim-treesitter",
+	"neovim-treesitter/nvim-treesitter",
 	branch = "main",
 	dependencies = {
 		{ "nvim-treesitter/nvim-treesitter-textobjects", branch = "main" },
+		"neovim-treesitter/treesitter-parser-registry",
 		"RRethy/nvim-treesitter-endwise",
 		-- "windwp/nvim-ts-autotag",
 		-- "windwp/nvim-autopairs",
@@ -35,14 +36,11 @@ return {
 		require("nvim-treesitter").install(filetypes)
 		vim.api.nvim_create_autocmd('FileType', {
 			pattern = filetypes,
-			callback = function(args)
-				local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
-				if lang then
-					local ok, err = pcall(vim.treesitter.start, args.buf, lang)
-					if not ok then
-						vim.notify("Treesitter failed for " .. lang .. ": " .. tostring(err), vim.log.levels.ERROR)
-					end
-				end
+			callback = function()
+				vim.treesitter.start()
+				vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+				vim.wo.foldmethod = 'expr'
+				vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 			end,
 		})
 		require("nvim-treesitter-textobjects").setup({
