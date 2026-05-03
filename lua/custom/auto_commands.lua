@@ -22,15 +22,5 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		if client and client:supports_method('textDocument/inlayHint', event.buf) then
 			map('<leader>ci', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[T]oggle Inlay [H]ints')
 		end
-
-		if client then
-			vim.lsp.completion.enable(true, client.id, event.buf, {
-				autotrigger = true,
-				convert = function(item)
-					return { abbr = item.label:gsub("%b()", "") }
-				end,
-			})
-			vim.keymap.set("i", "<C-space>", vim.lsp.completion.get, { desc = "trigger autocompletion" })
-		end
 	end,
 })
