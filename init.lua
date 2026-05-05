@@ -127,3 +127,5 @@ vim.api.nvim_create_user_command('TSStatus', function(opts)
     abi_version = inspect_ok and info.abi_version or nil,
   })
 end, { nargs = '?' })
+
+vim.o.autocomplete = false
