@@ -3,6 +3,7 @@ require("custom.lazy_setup")
 require("custom.keymaps")
 require("custom.hspec").setup()
 require("custom.auto_commands")
+require("custom.tmux_socket").setup()
 
 local ghlite_config = {
   debug = false,
