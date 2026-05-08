@@ -32,6 +32,7 @@ return {
 			'javascript',
 			'go',
 			'nu',
+			'wgsl',
 		}
 		require("nvim-treesitter").install(filetypes)
 		vim.api.nvim_create_autocmd('FileType', {
