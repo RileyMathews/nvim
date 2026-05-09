@@ -7,13 +7,15 @@ return {
 		"saghen/blink.compat",
 	},
 	opts = {
-		keymap = { preset = "default" },
-
 		appearance = {
 			nerd_font_variant = "mono",
 		},
 
-		completion = { documentation = { auto_show = true } },
+		signature = {
+			enabled = true,
+		},
+
+		completion = { documentation = { auto_show = true, auto_show_delay = 250, } },
 		fuzzy = { implementation = "rust" },
 		sources = {
 			default = { "lsp", "path", "buffer" },
@@ -25,6 +27,26 @@ return {
 				},
 			},
 		},
+
+		keymap = {
+			preset = "default",
+			-- blink doesn't seem to bring up
+			-- signature help by default when
+			-- accepting a suggestion
+			-- this override does that.
+			["<C-y>"] = {
+				function(cmp)
+					return cmp.select_and_accept({
+						callback = function()
+							vim.schedule(function()
+								cmp.show_signature()
+							end)
+						end,
+					})
+				end,
+				"fallback",
+			},
+		}
 	},
 	opts_extend = { "sources.default" },
 }
