@@ -15,7 +15,7 @@ return {
 			enabled = true,
 		},
 
-		completion = { documentation = { auto_show = true, auto_show_delay = 250, } },
+		completion = { documentation = { auto_show = true } },
 		fuzzy = { implementation = "rust" },
 		sources = {
 			default = { "lsp", "path", "buffer" },
