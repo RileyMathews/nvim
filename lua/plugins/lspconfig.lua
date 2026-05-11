@@ -34,12 +34,19 @@ return {
 			clangd = {},
 			rust_analyzer = {},
 			ty = {},
-			kotlin_lsp = {
-				single_file_support = false,
-			},
 		}
 
+
 		for server_name, server_settings in pairs(manual_servers) do
+			server_settings.capabilities = require('blink.cmp').get_lsp_capabilities( {
+				textDocument = {
+					completion = {
+						completionItem = {
+							snippetSupport = false,
+						},
+					},
+				},
+			})
 			vim.lsp.config(server_name, server_settings)
 			vim.lsp.enable(server_name)
 		end
