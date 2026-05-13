@@ -34,8 +34,8 @@ return {
 			clangd = {},
 			rust_analyzer = {},
 			ty = {},
+			ols = {},
 		}
-
 
 		for server_name, server_settings in pairs(manual_servers) do
 			server_settings.capabilities = require('blink.cmp').get_lsp_capabilities( {
