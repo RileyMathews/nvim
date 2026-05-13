@@ -33,6 +33,8 @@ return {
 			'go',
 			'nu',
 			'wgsl',
+			'odin',
+			'zig',
 		}
 		require("nvim-treesitter").install(filetypes)
 		vim.api.nvim_create_autocmd('FileType', {
