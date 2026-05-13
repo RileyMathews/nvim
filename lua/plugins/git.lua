@@ -40,6 +40,23 @@ return {
 		},
 	},
 	{
+		'sindrets/diffview.nvim',
+		cmd = { 'DiffviewOpen', 'DiffviewClose', 'DiffviewFocusFiles', 'DiffviewToggleFiles' },
+		init = function()
+			require('custom.review_agent_diff').setup()
+		end,
+		opts = {
+			hooks = {
+				diff_buf_read = function(bufnr)
+					require('custom.review_agent_diff').attach_diff_buffer(bufnr)
+				end,
+				diff_buf_win_enter = function(bufnr)
+					require('custom.review_agent_diff').attach_diff_buffer(bufnr)
+				end,
+			},
+		},
+	},
+	{
 		dir ='~/code/ghlite',
 		dependencies = { 'sindrets/diffview.nvim' },
 		lazy = false,
