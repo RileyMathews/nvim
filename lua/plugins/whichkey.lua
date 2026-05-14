@@ -11,7 +11,7 @@ return {
 			{ "<leader>t", group = "[T]est" },
 			{ "<leader>n", group = "[N]otifications" },
 			{ "<leader>j", group = "[J]ump (flash)" },
-			{ "<leader>o", group = "octo.nvim" },
+			{ "<leader>o", group = "[O]pencode" },
 			{ "<leader>r", group = "[R]eview" },
 			{ "<leader>u", group = "ghlite.nvim" },
 			{ "<leader>g", group = "[G]it" },
