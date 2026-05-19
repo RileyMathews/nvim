@@ -39,6 +39,26 @@ local ghlite_config = {
   },
 }
 
+local ghlite = require('ghlite')
+ghlite.setup(ghlite_config)
+
+vim.keymap.set('n', '<leader>uv', ghlite.load_pr_view, { silent = true, desc = 'PR View' })
+vim.keymap.set('n', '<leader>uu', ghlite.load_comments, { silent = true, desc = 'PR Load Comments' })
+vim.keymap.set('n', '<leader>ul', ghlite.load_pr_diffview, { silent = true, desc = 'PR Diffview' })
+vim.keymap.set('n', '<leader>up', function()
+  local pr_number = tonumber(vim.fn.input('PR number: '))
+  if pr_number ~= nil then
+    ghlite.open_pr(pr_number)
+  end
+end, { silent = true, desc = 'Open PR by number' })
+vim.keymap.set('n', '<leader>us', ghlite.submit_review, { silent = true, desc = 'PR Approve' })
+vim.keymap.set('n', '<leader>un', ghlite.submit_review, { silent = true, desc = 'PR Approve' })
+vim.keymap.set('n', '<leader>uc', ghlite.create_review, { silent = true, desc = 'PR top-level comment' })
+vim.keymap.set('x', '<leader>um', ghlite.comment_on_line, { silent = true, desc = 'PR Add comment' })
+vim.keymap.set('n', '<leader>ue', ghlite.update_comment, { silent = true, desc = 'PR Update comment' })
+vim.keymap.set('n', '<leader>ud', ghlite.delete_comment, { silent = true, desc = 'PR Delete comment' })
+vim.keymap.set('n', '<leader>ug', ghlite.open_comment, { silent = true, desc = 'PR Open comment' })
+
 local function reload_ghlite()
   for name, _ in pairs(package.loaded) do
     if name:match('^ghlite') then
