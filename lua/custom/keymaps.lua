@@ -84,11 +84,3 @@ end)
 vim.keymap.set("n", "<leader>cf", function()
 	conform.format({ timeout_ms = 3000 })
 end, { desc = "[F]ormat" })
-
-vim.keymap.set("n", "<leader>so", function()
-	require("custom.opencode_diag").pick()
-end, { desc = "[S]earch [O]pencode" })
-
-vim.keymap.set("n", "<leader>oc", function()
-	require("custom.opencode_diag").clear()
-end, { desc = "[O]pencode [C]lear" })
