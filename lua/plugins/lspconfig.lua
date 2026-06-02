@@ -30,11 +30,11 @@ return {
 			zls = {},
 			lua_ls = {},
 			pyright = {},
-			tsgo = {},
 			clangd = {},
 			rust_analyzer = {},
 			ty = {},
 			ols = {},
+			vtsls = {},
 		}
 
 		for server_name, server_settings in pairs(manual_servers) do
