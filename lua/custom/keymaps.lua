@@ -81,6 +81,8 @@ vim.keymap.set({ "x", "o" }, "as", function()
   require "nvim-treesitter-textobjects.select".select_textobject("@local.scope", "locals")
 end)
 
+vim.keymap.set("n", "<leader>gd", MiniDiff.toggle_overlay, { desc = "[G]it [D]iff"})
+
 vim.keymap.set("n", "<leader>cf", function()
 	conform.format({ timeout_ms = 3000 })
 end, { desc = "[F]ormat" })
