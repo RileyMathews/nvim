@@ -35,6 +35,7 @@ return {
 			ty = {},
 			ols = {},
 			vtsls = {},
+			qmlls = {},
 		}
 
 		for server_name, server_settings in pairs(manual_servers) do
