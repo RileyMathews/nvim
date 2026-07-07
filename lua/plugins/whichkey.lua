@@ -5,6 +5,8 @@ return {
 	config = function()
 		local wk = require("which-key")
 		wk.add({
+			{ "<leader>a", group = "[A]gent review" },
+			{ "<leader>ac", group = "[C]omment" },
 			{ "<leader>d", group = "[D]iagnostics" },
 			{ "<leader>h", group = "[H]arpoon" },
 			{ "<leader>s", group = "[S]earch" },

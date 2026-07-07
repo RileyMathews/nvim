@@ -2,6 +2,18 @@ require("custom.ghciwatch").setup()
 local conform = require("conform")
 local trouble = require("trouble")
 
+-- Agent review feedback plugin
+local agent_review = require("custom.agent_review")
+agent_review.setup()
+vim.keymap.set({ "n", "x" }, "<leader>aci", function()
+	agent_review.comment("issue")
+end, { desc = "[A]gent [C]omment [I]ssue" })
+vim.keymap.set({ "n", "x" }, "<leader>acq", function()
+	agent_review.comment("question")
+end, { desc = "[A]gent [C]omment [Q]uestion" })
+vim.keymap.set("n", "<leader>ae", agent_review.export, { desc = "[A]gent [E]xport prompt" })
+vim.keymap.set("n", "<leader>ax", agent_review.clear, { desc = "[A]gent clear comments" })
+
 -- PR Comments plugin setup
 -- local pr_comments = require("custom.pr_comments").setup({
 --     use_fake_data = false, -- Use real GitHub API
