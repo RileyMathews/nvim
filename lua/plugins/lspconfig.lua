@@ -34,7 +34,22 @@ return {
 			rust_analyzer = {},
 			ty = {},
 			ols = {},
-			vtsls = {},
+			tsc = {
+				cmd = { "tsc", "--lsp", "--stdio" },
+				filetypes = {
+					"javascript",
+					"javascriptreact",
+					"typescript",
+					"typescriptreact",
+				},
+				root_markers = {
+					"package.json",
+					"tsconfig.json",
+					"jsconfig.json",
+					".git",
+				},
+			},
+			svelte = {},
 			qmlls = {},
 		}
 
