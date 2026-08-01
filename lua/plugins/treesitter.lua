@@ -35,6 +35,7 @@ return {
 			'wgsl',
 			'odin',
 			'zig',
+			'svelte',
 		}
 		require("nvim-treesitter").install(filetypes)
 		vim.api.nvim_create_autocmd('FileType', {
