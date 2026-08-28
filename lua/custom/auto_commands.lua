@@ -24,3 +24,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		end
 	end,
 })
+
+vim.api.nvim_create_autocmd("FileType", {
+	group = vim.api.nvim_create_augroup("markdown-pairs", { clear = true }),
+	pattern = "markdown",
+	callback = function(event)
+		vim.keymap.set("i", "`", "`", { buffer = event.buf })
+	end,
+})
