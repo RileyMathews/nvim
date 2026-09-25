@@ -26,6 +26,7 @@ return {
 			'vimdoc',
 			'python',
 			'haskell',
+			'hlsl',
 			'zsh',
 			'nix',
 			'typescript',

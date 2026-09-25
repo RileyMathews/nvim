@@ -16,6 +16,15 @@ return {
 	},
 	-- event = "BufReadPre",
 	config = function()
+		vim.filetype.add({
+			extension = {
+				vsh = "hlsl",
+				psh = "hlsl",
+				csh = "hlsl",
+				hlsli = "hlsl",
+			},
+		})
+
 		local manual_servers = {
 			-- overriding hls to start static-ls instead
 			hls = {
